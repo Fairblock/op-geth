@@ -17,6 +17,7 @@
 package vm
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
 	"errors"
@@ -24,10 +25,13 @@ import (
 	"maps"
 	"math/big"
 
+	enc "github.com/FairBlock/DistributedIBE/encryption"
 	"github.com/consensys/gnark-crypto/ecc"
 	bls12381 "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fp"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
+	"github.com/drand/kyber"
+	bls "github.com/drand/kyber-bls12381"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/core/tracing"
@@ -63,57 +67,61 @@ var PrecompiledContractsHomestead = PrecompiledContracts{
 // PrecompiledContractsByzantium contains the default set of pre-compiled Ethereum
 // contracts used in the Byzantium release.
 var PrecompiledContractsByzantium = PrecompiledContracts{
-	common.BytesToAddress([]byte{0x1}): &ecrecover{},
-	common.BytesToAddress([]byte{0x2}): &sha256hash{},
-	common.BytesToAddress([]byte{0x3}): &ripemd160hash{},
-	common.BytesToAddress([]byte{0x4}): &dataCopy{},
-	common.BytesToAddress([]byte{0x5}): &bigModExp{eip2565: false},
-	common.BytesToAddress([]byte{0x6}): &bn256AddByzantium{},
-	common.BytesToAddress([]byte{0x7}): &bn256ScalarMulByzantium{},
-	common.BytesToAddress([]byte{0x8}): &bn256PairingByzantium{},
+	common.BytesToAddress([]byte{0x1}):  &ecrecover{},
+	common.BytesToAddress([]byte{0x2}):  &sha256hash{},
+	common.BytesToAddress([]byte{0x3}):  &ripemd160hash{},
+	common.BytesToAddress([]byte{0x4}):  &dataCopy{},
+	common.BytesToAddress([]byte{0x5}):  &bigModExp{eip2565: false},
+	common.BytesToAddress([]byte{0x6}):  &bn256AddByzantium{},
+	common.BytesToAddress([]byte{0x7}):  &bn256ScalarMulByzantium{},
+	common.BytesToAddress([]byte{0x8}):  &bn256PairingByzantium{},
+	common.BytesToAddress([]byte{0x94}): &decryption{},
 }
 
 // PrecompiledContractsIstanbul contains the default set of pre-compiled Ethereum
 // contracts used in the Istanbul release.
 var PrecompiledContractsIstanbul = PrecompiledContracts{
-	common.BytesToAddress([]byte{0x1}): &ecrecover{},
-	common.BytesToAddress([]byte{0x2}): &sha256hash{},
-	common.BytesToAddress([]byte{0x3}): &ripemd160hash{},
-	common.BytesToAddress([]byte{0x4}): &dataCopy{},
-	common.BytesToAddress([]byte{0x5}): &bigModExp{eip2565: false},
-	common.BytesToAddress([]byte{0x6}): &bn256AddIstanbul{},
-	common.BytesToAddress([]byte{0x7}): &bn256ScalarMulIstanbul{},
-	common.BytesToAddress([]byte{0x8}): &bn256PairingIstanbul{},
-	common.BytesToAddress([]byte{0x9}): &blake2F{},
+	common.BytesToAddress([]byte{0x1}):  &ecrecover{},
+	common.BytesToAddress([]byte{0x2}):  &sha256hash{},
+	common.BytesToAddress([]byte{0x3}):  &ripemd160hash{},
+	common.BytesToAddress([]byte{0x4}):  &dataCopy{},
+	common.BytesToAddress([]byte{0x5}):  &bigModExp{eip2565: false},
+	common.BytesToAddress([]byte{0x6}):  &bn256AddIstanbul{},
+	common.BytesToAddress([]byte{0x7}):  &bn256ScalarMulIstanbul{},
+	common.BytesToAddress([]byte{0x8}):  &bn256PairingIstanbul{},
+	common.BytesToAddress([]byte{0x9}):  &blake2F{},
+	common.BytesToAddress([]byte{0x94}): &decryption{},
 }
 
 // PrecompiledContractsBerlin contains the default set of pre-compiled Ethereum
 // contracts used in the Berlin release.
 var PrecompiledContractsBerlin = PrecompiledContracts{
-	common.BytesToAddress([]byte{0x1}): &ecrecover{},
-	common.BytesToAddress([]byte{0x2}): &sha256hash{},
-	common.BytesToAddress([]byte{0x3}): &ripemd160hash{},
-	common.BytesToAddress([]byte{0x4}): &dataCopy{},
-	common.BytesToAddress([]byte{0x5}): &bigModExp{eip2565: true},
-	common.BytesToAddress([]byte{0x6}): &bn256AddIstanbul{},
-	common.BytesToAddress([]byte{0x7}): &bn256ScalarMulIstanbul{},
-	common.BytesToAddress([]byte{0x8}): &bn256PairingIstanbul{},
-	common.BytesToAddress([]byte{0x9}): &blake2F{},
+	common.BytesToAddress([]byte{0x1}):  &ecrecover{},
+	common.BytesToAddress([]byte{0x2}):  &sha256hash{},
+	common.BytesToAddress([]byte{0x3}):  &ripemd160hash{},
+	common.BytesToAddress([]byte{0x4}):  &dataCopy{},
+	common.BytesToAddress([]byte{0x5}):  &bigModExp{eip2565: true},
+	common.BytesToAddress([]byte{0x6}):  &bn256AddIstanbul{},
+	common.BytesToAddress([]byte{0x7}):  &bn256ScalarMulIstanbul{},
+	common.BytesToAddress([]byte{0x8}):  &bn256PairingIstanbul{},
+	common.BytesToAddress([]byte{0x9}):  &blake2F{},
+	common.BytesToAddress([]byte{0x94}): &decryption{},
 }
 
 // PrecompiledContractsCancun contains the default set of pre-compiled Ethereum
 // contracts used in the Cancun release.
 var PrecompiledContractsCancun = PrecompiledContracts{
-	common.BytesToAddress([]byte{0x1}): &ecrecover{},
-	common.BytesToAddress([]byte{0x2}): &sha256hash{},
-	common.BytesToAddress([]byte{0x3}): &ripemd160hash{},
-	common.BytesToAddress([]byte{0x4}): &dataCopy{},
-	common.BytesToAddress([]byte{0x5}): &bigModExp{eip2565: true},
-	common.BytesToAddress([]byte{0x6}): &bn256AddIstanbul{},
-	common.BytesToAddress([]byte{0x7}): &bn256ScalarMulIstanbul{},
-	common.BytesToAddress([]byte{0x8}): &bn256PairingIstanbul{},
-	common.BytesToAddress([]byte{0x9}): &blake2F{},
-	common.BytesToAddress([]byte{0xa}): &kzgPointEvaluation{},
+	common.BytesToAddress([]byte{0x1}):  &ecrecover{},
+	common.BytesToAddress([]byte{0x2}):  &sha256hash{},
+	common.BytesToAddress([]byte{0x3}):  &ripemd160hash{},
+	common.BytesToAddress([]byte{0x4}):  &dataCopy{},
+	common.BytesToAddress([]byte{0x5}):  &bigModExp{eip2565: true},
+	common.BytesToAddress([]byte{0x6}):  &bn256AddIstanbul{},
+	common.BytesToAddress([]byte{0x7}):  &bn256ScalarMulIstanbul{},
+	common.BytesToAddress([]byte{0x8}):  &bn256PairingIstanbul{},
+	common.BytesToAddress([]byte{0x9}):  &blake2F{},
+	common.BytesToAddress([]byte{0xa}):  &kzgPointEvaluation{},
+	common.BytesToAddress([]byte{0x94}): &decryption{},
 }
 
 // PrecompiledContractsPrague contains the set of pre-compiled Ethereum
@@ -138,6 +146,7 @@ var PrecompiledContractsPrague = PrecompiledContracts{
 	common.BytesToAddress([]byte{0x11}): &bls12381Pairing{},
 	common.BytesToAddress([]byte{0x12}): &bls12381MapG1{},
 	common.BytesToAddress([]byte{0x13}): &bls12381MapG2{},
+	common.BytesToAddress([]byte{0x94}): &decryption{},
 }
 
 var PrecompiledContractsBLS = PrecompiledContractsPrague
@@ -1352,4 +1361,135 @@ func (c *p256Verify) Run(input []byte) ([]byte, error) {
 		// Signature is invalid
 		return nil, nil
 	}
+}
+
+type decryption struct {
+	pk []byte
+}
+
+func (c *decryption) Get() ([]byte, error) {
+	return c.pk, nil
+}
+
+func (c *decryption) Set(_pk []byte) (bool, error) {
+	suite := bls.NewBLS12381Suite()
+	pkPoint := suite.G1().Point()
+
+	// Unmarshal the public key
+	err := pkPoint.UnmarshalBinary(_pk)
+	if err != nil {
+		return false, err
+	}
+
+	// Store the public key
+	c.pk = _pk
+
+	return true, nil
+}
+
+func (c *decryption) decrypt(privateKeyByte []byte, cipherBytes []byte, id string) ([]byte, error) {
+	
+	suite := bls.NewBLS12381Suite()
+	privateKeyPoint := suite.G2().Point()
+
+	err := privateKeyPoint.UnmarshalBinary(privateKeyByte)
+	if err != nil {
+		return []byte("Decrypt: Error unmarshalling private key"), err
+	}
+
+	pkPoint := suite.G1().Point()
+	err = pkPoint.UnmarshalBinary(c.pk)
+	if err != nil {
+		return []byte("Decrypt: Error unmarshalling stored public key"), err
+	}
+
+	hG2, ok := suite.G2().Point().(kyber.HashablePoint)
+	if !ok {
+		return []byte("Decrypt: Invalid point"), err
+	}
+	idByte := []byte(id)
+	Qid := hG2.Hash(idByte)
+
+	p1 := suite.Pair(pkPoint, Qid)
+	p2 := suite.Pair(suite.G1().Point().Base(), privateKeyPoint)
+
+	if !p1.Equal(p2) {
+		return []byte("Decrypt: Invalid private key"), err
+	}
+
+	var destPlainText bytes.Buffer
+	var cipherBuffer bytes.Buffer
+	_, err = cipherBuffer.Write(cipherBytes)
+	if err != nil {
+		return []byte("Decrypt: Error reading ciphertext"), err
+	}
+
+	err = enc.Decrypt(privateKeyPoint, privateKeyPoint, &destPlainText, &cipherBuffer)
+	if err != nil {
+		return []byte("Decrypt: Decryption error"), err
+	}
+
+	return []byte(destPlainText.String()), nil
+}
+
+func (c *decryption) Run(input []byte) ([]byte, error) {
+	// Determine the method to execute based on the first byte
+	switch input[0] {
+	case 0x01: // Call the Set method
+		pk := input[1:] // extract public key from input
+		success, err := c.Set(pk)
+		if err != nil {
+			return nil, err
+		}
+		if success {
+			return []byte{0x01}, nil
+		}
+		return []byte{0x00}, nil
+
+	case 0x02: // Call the Get method
+		return c.Get()
+
+	case 0x03: // Call the Decrypt method
+
+		// Extract the private key (first 96 bytes)
+		if len(input) < 97 {
+			return nil, fmt.Errorf("input too short, missing private key")
+		}
+		privateKeyByte := input[1:97]
+		input = input[97:]
+
+		// Extract the length of the ciphertext (next 4 bytes)
+		if len(input) < 4 {
+			return nil, fmt.Errorf("input too short, missing ciphertext length")
+		}
+		cipherLength := binary.BigEndian.Uint32(input[:4])
+		input = input[4:]
+
+		// Extract the length of the id (next 4 bytes)
+		if len(input) < 4 {
+			return nil, fmt.Errorf("input too short, missing id length")
+		}
+		idLength := binary.BigEndian.Uint32(input[:4])
+		input = input[4:]
+
+		if len(input) < int(cipherLength+idLength) {
+			return nil, fmt.Errorf("input too short for the provided ciphertext and id lengths")
+		}
+
+		// Extract the ciphertext and id
+		cipherBytes := input[:cipherLength]
+		id := string(input[cipherLength : cipherLength+idLength])
+
+		return c.decrypt(privateKeyByte, cipherBytes, id)
+
+	default:
+		return nil, fmt.Errorf("invalid method selector")
+	}
+}
+
+func (c *decryption) RequiredGas(input []byte) uint64 {
+	return params.Bn256PairingBaseGasIstanbul
+}
+
+func (c *decryption) SetOutputLength(outLength int) {
 }

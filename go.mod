@@ -6,6 +6,7 @@ toolchain go1.22.7
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.2.0
+	github.com/FairBlock/DistributedIBE v0.0.0-20231211202607-d457df6869db
 	github.com/Microsoft/go-winio v0.6.2
 	github.com/VictoriaMetrics/fastcache v1.12.2
 	github.com/aws/aws-sdk-go-v2 v1.21.2
@@ -23,6 +24,8 @@ require (
 	github.com/deckarep/golang-set/v2 v2.6.0
 	github.com/donovanhide/eventsource v0.0.0-20210830082556-c59027999da0
 	github.com/dop251/goja v0.0.0-20230806174421-c933cf95e127
+	github.com/drand/kyber v1.3.0
+	github.com/drand/kyber-bls12381 v0.3.1
 	github.com/ethereum-optimism/superchain-registry/superchain v0.0.0-20241213092551-33a63fce8214
 	github.com/ethereum/c-kzg-4844 v1.0.0
 	github.com/ethereum/go-verkle v0.1.1-0.20240829091221-dffa7562dbe9
@@ -80,6 +83,7 @@ require (
 )
 
 require (
+	filippo.io/age v1.1.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.7.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.3.0 // indirect
 	github.com/BurntSushi/toml v1.4.0 // indirect
