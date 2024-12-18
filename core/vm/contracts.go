@@ -1429,7 +1429,7 @@ func (c *decryption) decrypt(privateKeyByte []byte, cipherBytes []byte, id strin
 		return []byte("Decrypt: Decryption error"), err
 	}
 
-	return []byte(destPlainText.String()), nil
+	return destPlainText.Bytes(), nil
 }
 
 func (c *decryption) Run(input []byte) ([]byte, error) {
